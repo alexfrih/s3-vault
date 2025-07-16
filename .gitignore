@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.local
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+*.out
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE specific files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.sw?
+*~
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+.temp/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# Rust/Tauri specific
+target/
+Cargo.lock
+
+# General
+*.bak
+*.tmp
+*.temp
+.backup/
