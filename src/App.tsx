@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Upload, Download, Trash2, Search, FolderOpen, FileIcon, LogOut } from "lucide-react";
-import { api, S3File } from "./lib/api";
-import { cn, formatBytes, formatDate } from "./lib/utils";
+import { Settings, Search, FolderOpen, LogOut } from "lucide-react";
+import { api } from "./lib/api";
 import { ConnectForm } from "./components/ConnectForm";
 import { FileList } from "./components/FileList";
 import { UploadZone } from "./components/UploadZone";
