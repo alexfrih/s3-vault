@@ -10,6 +10,9 @@ declare global {
       deleteFile: (params: any) => Promise<any>;
       createFolder: (params: any) => Promise<any>;
       deleteFolder: (params: any) => Promise<any>;
+      downloadFolder: (params: any) => Promise<any>;
+      renameFile: (params: any) => Promise<any>;
+      renameFolder: (params: any) => Promise<any>;
       openFileDialog: () => Promise<string[] | null>;
       openUrl: (url: string) => Promise<void>;
     }
@@ -211,6 +214,92 @@ export const api = {
     
     if (!result.success) {
       throw new Error('Failed to delete folder');
+    }
+  },
+  
+  async downloadFolder(prefix: string, folderName: string): Promise<void> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    const result = await window.electronAPI.downloadFolder({
+      bucket: currentBucket,
+      prefix,
+      folderName
+    });
+    
+    if (!result.success) {
+      throw new Error('Failed to download folder');
+    }
+    
+    // Create a blob from the base64 data
+    const byteCharacters = atob(result.data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/zip' });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = result.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+  
+  async renameFile(oldKey: string, newName: string): Promise<void> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    // Get the directory path from the old key
+    const lastSlash = oldKey.lastIndexOf('/');
+    const directory = lastSlash !== -1 ? oldKey.substring(0, lastSlash + 1) : '';
+    const newKey = directory + newName;
+    
+    if (oldKey === newKey) {
+      return; // No change needed
+    }
+    
+    const result = await window.electronAPI.renameFile({
+      bucket: currentBucket,
+      oldKey,
+      newKey
+    });
+    
+    if (!result.success) {
+      throw new Error('Failed to rename file');
+    }
+  },
+  
+  async renameFolder(oldPrefix: string, newName: string): Promise<void> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    // Get the parent directory path
+    const withoutTrailingSlash = oldPrefix.endsWith('/') ? oldPrefix.slice(0, -1) : oldPrefix;
+    const lastSlash = withoutTrailingSlash.lastIndexOf('/');
+    const parentDirectory = lastSlash !== -1 ? withoutTrailingSlash.substring(0, lastSlash + 1) : '';
+    const newPrefix = parentDirectory + newName + '/';
+    
+    if (oldPrefix === newPrefix) {
+      return; // No change needed
+    }
+    
+    const result = await window.electronAPI.renameFolder({
+      bucket: currentBucket,
+      oldPrefix,
+      newPrefix
+    });
+    
+    if (!result.success) {
+      throw new Error('Failed to rename folder');
     }
   },
 

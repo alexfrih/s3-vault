@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Download, Trash2, FileIcon, RefreshCw, Loader2 } from "lucide-react";
+import { Download, Trash2, FileIcon, RefreshCw, Loader2, Edit2 } from "lucide-react";
 import { api, S3File } from "../lib/api";
 import { formatBytes, formatDate, cn } from "../lib/utils";
 import { useToast } from "../contexts/ToastContext";
+import { RenameModal } from "./RenameModal";
 
 interface FileListProps {
   files: S3File[];
@@ -13,6 +14,8 @@ interface FileListProps {
 
 export function FileList({ files, isLoading, onRefresh }: FileListProps) {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [fileToRename, setFileToRename] = useState<S3File | null>(null);
   const { showToast } = useToast();
 
   const downloadMutation = useMutation({
@@ -31,6 +34,20 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
     onError: () => {
       showToast("Failed to delete file", "error");
     },
+  });
+  
+  const renameMutation = useMutation({
+    mutationFn: ({ oldKey, newName }: { oldKey: string; newName: string }) => 
+      api.renameFile(oldKey, newName),
+    onSuccess: () => {
+      onRefresh();
+      showToast("File renamed successfully", "success");
+      setRenameModalOpen(false);
+      setFileToRename(null);
+    },
+    onError: () => {
+      showToast("Failed to rename file", "error");
+    }
   });
 
   const toggleSelect = (key: string) => {
@@ -122,6 +139,17 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
               
               <button
                 onClick={() => {
+                  setFileToRename(file);
+                  setRenameModalOpen(true);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Rename"
+              >
+                <Edit2 className="w-4 h-4 text-gray-600" />
+              </button>
+              
+              <button
+                onClick={() => {
                   if (confirm(`Delete ${file.key}?`)) {
                     deleteMutation.mutate(file.key);
                   }
@@ -140,6 +168,21 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
           </div>
         ))}
       </div>
+      
+      {fileToRename && (
+        <RenameModal
+          isOpen={renameModalOpen}
+          onClose={() => {
+            setRenameModalOpen(false);
+            setFileToRename(null);
+          }}
+          onRename={(newName) => {
+            renameMutation.mutate({ oldKey: fileToRename.key, newName });
+          }}
+          currentName={fileToRename.key.split('/').pop() || fileToRename.key}
+          title="Rename File"
+        />
+      )}
     </div>
   );
 }

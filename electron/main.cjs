@@ -1,10 +1,13 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
 const path = require('path');
-const { S3Client, ListObjectsV2Command, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListObjectsV2Command, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, HeadObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const Store = require('electron-store');
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const { autoUpdater } = require('electron-updater');
+const archiver = require('archiver');
+const os = require('os');
 
 const store = new Store();
 let mainWindow;
@@ -46,8 +49,122 @@ function createWindow() {
   }
 }
 
+// Configure auto-updater
+autoUpdater.autoDownload = false; // We'll ask the user first
+autoUpdater.autoInstallOnAppQuit = true;
+
+// Auto-updater events
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  // Send to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info);
+  }
+  
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Available',
+    message: `A new version (${info.version}) is available. Would you like to download it now?`,
+    detail: 'The update will be installed automatically when you quit the app.',
+    buttons: ['Download', 'Later'],
+    defaultId: 0,
+    cancelId: 1
+  }).then(result => {
+    if (result.response === 0) {
+      autoUpdater.downloadUpdate();
+    }
+  });
+});
+
+autoUpdater.on('update-not-available', () => {
+  console.log('Update not available');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Error in auto-updater:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  let log_message = "Download speed: " + progressObj.bytesPerSecond;
+  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
+  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  console.log(log_message);
+});
+
+autoUpdater.on('update-downloaded', () => {
+  // Send to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded');
+  }
+  
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Update Ready',
+    message: 'Update downloaded. The application will update on restart.',
+    detail: 'Would you like to restart now?',
+    buttons: ['Restart', 'Later'],
+    defaultId: 0,
+    cancelId: 1
+  }).then(result => {
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
+
+// Create application menu
+function createMenu() {
+  const template = [
+    {
+      label: 'S3 Vault',
+      submenu: [
+        {
+          label: 'About S3 Vault',
+          click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'About S3 Vault',
+              message: 'S3 Vault',
+              detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nNode: ${process.versions.node}`,
+              buttons: ['OK']
+            });
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Check for Updates...',
+          click: () => {
+            autoUpdater.checkForUpdatesAndNotify();
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
+  ];
+
+  if (process.platform === 'darwin') {
+    template[0].submenu.unshift({ role: 'about' });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
 app.whenReady().then(() => {
   createWindow();
+  createMenu();
+
+  // Check for updates after window is created
+  if (!isDev) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -320,6 +437,184 @@ ipcMain.handle('open-file-dialog', async () => {
 // Open URL
 ipcMain.handle('open-url', async (event, url) => {
   await shell.openExternal(url);
+});
+
+// Rename file
+ipcMain.handle('rename-file', async (event, { bucket, oldKey, newKey }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    // Copy to new location
+    await s3Client.send(new CopyObjectCommand({
+      Bucket: bucket,
+      CopySource: `${bucket}/${oldKey}`,
+      Key: newKey
+    }));
+    
+    // Delete old file
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: oldKey
+    }));
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Rename file error:', error);
+    throw error;
+  }
+});
+
+// Rename folder
+ipcMain.handle('rename-folder', async (event, { bucket, oldPrefix, newPrefix }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    // List all objects in the folder
+    let continuationToken = null;
+    let renamedCount = 0;
+    
+    do {
+      const listParams = {
+        Bucket: bucket,
+        Prefix: oldPrefix,
+        ContinuationToken: continuationToken
+      };
+      
+      const response = await s3Client.send(new ListObjectsV2Command(listParams));
+      
+      if (response.Contents) {
+        // Rename each object
+        for (const object of response.Contents) {
+          const newKey = object.Key.replace(oldPrefix, newPrefix);
+          
+          // Copy to new location
+          await s3Client.send(new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: `${bucket}/${object.Key}`,
+            Key: newKey
+          }));
+          
+          // Delete old object
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: bucket,
+            Key: object.Key
+          }));
+          
+          renamedCount++;
+        }
+      }
+      
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+    
+    return { success: true, renamedCount };
+  } catch (error) {
+    console.error('Rename folder error:', error);
+    throw error;
+  }
+});
+
+// Download folder as ZIP
+ipcMain.handle('download-folder', async (event, { bucket, prefix, folderName }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    // Create temporary zip file
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'v0lt-'));
+    const zipPath = path.join(tempDir, `${folderName}.zip`);
+    
+    // Create zip archive
+    const output = require('fs').createWriteStream(zipPath);
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // Maximum compression
+    });
+    
+    // Handle archive errors
+    archive.on('error', (err) => {
+      throw err;
+    });
+    
+    // Pipe archive data to the file
+    archive.pipe(output);
+    
+    // List all objects in the folder
+    let continuationToken = null;
+    let fileCount = 0;
+    
+    do {
+      const listParams = {
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken
+      };
+      
+      const response = await s3Client.send(new ListObjectsV2Command(listParams));
+      
+      if (response.Contents) {
+        // Download and add each file to the archive
+        for (const object of response.Contents) {
+          // Skip if it's just the folder marker
+          if (object.Key === prefix || object.Key.endsWith('/')) {
+            continue;
+          }
+          
+          // Get the file
+          const getObjectCommand = new GetObjectCommand({
+            Bucket: bucket,
+            Key: object.Key
+          });
+          
+          const { Body } = await s3Client.send(getObjectCommand);
+          
+          // Convert stream to buffer
+          const chunks = [];
+          for await (const chunk of Body) {
+            chunks.push(chunk);
+          }
+          const buffer = Buffer.concat(chunks);
+          
+          // Add to archive with relative path
+          const relativePath = object.Key.substring(prefix.length);
+          archive.append(buffer, { name: relativePath });
+          fileCount++;
+        }
+      }
+      
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+    
+    // Finalize the archive
+    await archive.finalize();
+    
+    // Wait for the output stream to finish
+    await new Promise((resolve, reject) => {
+      output.on('close', resolve);
+      output.on('error', reject);
+    });
+    
+    // Read the zip file
+    const zipBuffer = await fs.readFile(zipPath);
+    
+    // Clean up temp file
+    await fs.unlink(zipPath);
+    await fs.rmdir(tempDir);
+    
+    return {
+      success: true,
+      data: zipBuffer.toString('base64'),
+      fileName: `${folderName}.zip`,
+      fileCount
+    };
+  } catch (error) {
+    console.error('Download folder error:', error);
+    throw error;
+  }
 });
 
 // Encryption helpers

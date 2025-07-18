@@ -1,20 +1,24 @@
 # S3 Vault
 
-A lightweight, cross-platform desktop app for managing S3-compatible object storage.
+A modern, cross-platform desktop app for managing S3-compatible object storage.
 
 ## Features
 
-- 🔐 Secure credential storage
-- 📁 Browse and search files
+- 🔐 Secure credential storage with encryption
+- 📁 Browse files and folders with navigation
+- 📂 Create, delete, and navigate folders
 - ⬆️ Upload files via drag-and-drop or file picker
-- ⬇️ Download files with progress tracking
-- 🗑️ Delete files
+- ⬇️ Download files directly
+- 🗑️ Delete files and folders
+- 🔍 Search files and folders
+- 🔄 Automatic updates
+- 🎨 Clean, modern UI with toast notifications
 - 🚀 Works with any S3-compatible storage (AWS S3, Linode, DigitalOcean, MinIO, etc.)
 - 💻 Cross-platform (Windows, macOS, Linux)
 
 ## Installation
 
-Download the latest release for your platform from the [Releases](https://github.com/yourusername/s3-vault/releases) page.
+Download the latest release for your platform from the [Releases](https://github.com/alexfrih/v0lt/releases) page.
 
 ## Building from Source
 
@@ -31,8 +35,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/s3-vault.git
-cd s3-vault
+git clone https://github.com/alexfrih/v0lt.git
+cd v0lt
 
 # Install dependencies
 npm install

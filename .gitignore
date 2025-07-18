@@ -11,6 +11,7 @@ vendor/
 # Build outputs
 dist/
 dist-ssr/
+dist-electron/
 build/
 out/
 *.out
@@ -67,3 +68,11 @@ Cargo.lock
 *.tmp
 *.temp
 .backup/
+
+# Certificates
+*.p12
+*.pfx
+*.cer
+*.pem
+*.crt
+*.key

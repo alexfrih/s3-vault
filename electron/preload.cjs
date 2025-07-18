@@ -11,10 +11,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteFile: (params) => ipcRenderer.invoke('delete-file', params),
   createFolder: (params) => ipcRenderer.invoke('create-folder', params),
   deleteFolder: (params) => ipcRenderer.invoke('delete-folder', params),
+  downloadFolder: (params) => ipcRenderer.invoke('download-folder', params),
+  renameFile: (params) => ipcRenderer.invoke('rename-file', params),
+  renameFolder: (params) => ipcRenderer.invoke('rename-folder', params),
   
   // Dialog operations
   openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
   
   // System operations
-  openUrl: (url) => ipcRenderer.invoke('open-url', url)
+  openUrl: (url) => ipcRenderer.invoke('open-url', url),
+  
+  // Auto-updater
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('update-available', callback);
+  },
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', callback);
+  }
 });
