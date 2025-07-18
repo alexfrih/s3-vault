@@ -55,6 +55,15 @@ function createWindow() {
 autoUpdater.autoDownload = false; // We'll ask the user first
 autoUpdater.autoInstallOnAppQuit = true;
 
+// Set the feed URL explicitly (optional, but helps with debugging)
+if (!isDev) {
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'alexfrih',
+    repo: 'v0lt'
+  });
+}
+
 // Auto-updater events
 autoUpdater.on('checking-for-update', () => {
   console.log('Checking for update...');
@@ -83,10 +92,24 @@ autoUpdater.on('update-available', (info) => {
 
 autoUpdater.on('update-not-available', () => {
   console.log('Update not available');
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'No Updates Available',
+    message: 'You have the latest version!',
+    detail: `You are running v0lt version ${app.getVersion()}, which is the latest version available.`,
+    buttons: ['OK']
+  });
 });
 
 autoUpdater.on('error', (err) => {
   console.error('Error in auto-updater:', err);
+  dialog.showMessageBox(mainWindow, {
+    type: 'error',
+    title: 'Update Error',
+    message: 'Error checking for updates',
+    detail: err.message || 'An unknown error occurred while checking for updates.',
+    buttons: ['OK']
+  });
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
@@ -139,6 +162,13 @@ function createMenu() {
         {
           label: 'Check for Updates...',
           click: () => {
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Checking for Updates',
+              message: 'Checking for updates...',
+              detail: 'Please wait while we check for new versions.',
+              buttons: []
+            });
             autoUpdater.checkForUpdatesAndNotify();
           }
         },
