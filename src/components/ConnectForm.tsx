@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Key, Globe, Archive, Loader2, Link } from "lucide-react";
 import { api, S3Config } from "../lib/api";
@@ -13,10 +13,27 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
   const [config, setConfig] = useState<S3Config>({
     access_key_id: "",
     secret_access_key: "",
-    region: "us-east-1",
+    region: "",
     bucket_name: "",
     endpoint_url: "",
   });
+
+  // Load saved credentials when showing settings
+  useEffect(() => {
+    if (onCancel) {
+      api.loadSavedCredentials().then((creds) => {
+        if (creds) {
+          setConfig({
+            access_key_id: creds.access_key_id,
+            secret_access_key: creds.secret_access_key,
+            region: creds.region || "",
+            bucket_name: creds.bucket_name,
+            endpoint_url: creds.endpoint_url || "",
+          });
+        }
+      });
+    }
+  }, [onCancel]);
 
   const connectMutation = useMutation({
     mutationFn: api.connect,
@@ -34,7 +51,9 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
         <div className="text-center mb-8">
           <Archive className="w-12 h-12 text-gray-700 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900">S3 Vault</h1>
-          <p className="text-gray-600 mt-2">Connect to your S3-compatible storage</p>
+          <p className="text-gray-600 mt-2">
+            {onCancel ? "Update your connection settings" : "Connect to your S3-compatible storage"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -49,8 +68,7 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
                 value={config.endpoint_url || ""}
                 onChange={(e) => setConfig({ ...config, endpoint_url: e.target.value })}
                 className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
-                placeholder="https://s3.amazonaws.com"
-                required
+                placeholder="https://s3.amazonaws.com (optional)"
               />
             </div>
           </div>
@@ -87,22 +105,6 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Region
-            </label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={config.region}
-                onChange={(e) => setConfig({ ...config, region: e.target.value })}
-                className="pl-10 pr-3 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
-                placeholder="us-east-1"
-                required
-              />
-            </div>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -147,10 +149,10 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
               {connectMutation.isPending ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Connecting...
+                  {onCancel ? "Saving..." : "Connecting..."}
                 </span>
               ) : (
-                "Connect"
+                onCancel ? "Save Changes" : "Connect"
               )}
             </button>
           </div>

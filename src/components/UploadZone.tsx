@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, FolderPlus } from "lucide-react";
 import { api } from "../lib/api";
 import { cn } from "../lib/utils";
-import { open } from "@tauri-apps/plugin-dialog";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { CreateFolderModal } from "./CreateFolderModal";
+import { useToast } from "../contexts/ToastContext";
 
 interface UploadZoneProps {
   children: React.ReactNode;
@@ -13,12 +13,20 @@ interface UploadZoneProps {
 
 export function UploadZone({ children, onUpload }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const { showToast } = useToast();
 
   const uploadMutation = useMutation({
     mutationFn: async ({ key, data }: { key: string; data: Uint8Array }) => {
       await api.uploadFile(key, data);
     },
-    onSuccess: onUpload,
+    onSuccess: () => {
+      onUpload();
+      showToast("File uploaded successfully", "success");
+    },
+    onError: () => {
+      showToast("Failed to upload file", "error");
+    },
   });
 
   const handleFiles = useCallback(async (files: File[]) => {
@@ -51,56 +59,73 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
   }, []);
 
   const handleSelectFiles = async () => {
-    const selected = await open({
-      multiple: true,
-    });
-
-    if (selected) {
-      const paths = Array.isArray(selected) ? selected : [selected];
-      
-      for (const path of paths) {
-        const data = await readFile(path);
-        const filename = path.split("/").pop() || path;
-        uploadMutation.mutate({ key: filename, data: new Uint8Array(data) });
+    try {
+      // In Electron, the file dialog and upload are handled together
+      // We'll let the API handle the file selection
+      await api.uploadFile('', new Uint8Array());
+      onUpload();
+    } catch (error) {
+      if (error instanceof Error && error.message !== 'No file selected') {
+        console.error('Upload failed:', error);
       }
+    }
+  };
+  
+  const handleCreateFolder = async (folderName: string) => {
+    try {
+      await api.createFolder(folderName);
+      onUpload(); // Refresh the list
+      showToast("Folder created successfully", "success");
+    } catch (error) {
+      console.error('Failed to create folder:', error);
+      showToast("Failed to create folder", "error");
     }
   };
 
   return (
     <div
       className={cn(
-        "h-full rounded-lg border-2 border-dashed transition-colors",
+        "rounded-lg border-2 border-dashed transition-colors",
         isDragging ? "border-gray-400 bg-gray-50" : "border-gray-200"
       )}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      <div className="h-full flex flex-col">
+      <div className="flex flex-col">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Files</h2>
-            <button
-              onClick={handleSelectFiles}
-              disabled={uploadMutation.isPending}
-              className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              {uploadMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Uploading...</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  <span>Upload Files</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowCreateFolder(true)}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>New Folder</span>
+              </button>
+              <button
+                onClick={handleSelectFiles}
+                disabled={uploadMutation.isPending}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+              >
+                {uploadMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Files</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="p-6">
           {children}
         </div>
 
@@ -113,6 +138,12 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
           </div>
         )}
       </div>
+      
+      <CreateFolderModal
+        isOpen={showCreateFolder}
+        onClose={() => setShowCreateFolder(false)}
+        onCreate={handleCreateFolder}
+      />
     </div>
   );
 }

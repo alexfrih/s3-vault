@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Search, FolderOpen, LogOut } from "lucide-react";
+import { Settings, Search, FolderOpen, LogOut, FolderPlus } from "lucide-react";
 import { api } from "./lib/api";
 import { ConnectForm } from "./components/ConnectForm";
 import { FileList } from "./components/FileList";
+import { FolderList } from "./components/FolderList";
 import { UploadZone } from "./components/UploadZone";
+import { Breadcrumbs } from "./components/Breadcrumbs";
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -18,14 +20,18 @@ function App() {
     });
   }, []);
 
-  const { data: files = [], isLoading } = useQuery({
-    queryKey: ["files"],
+  const { data: fileData = { files: [], folders: [] }, isLoading } = useQuery({
+    queryKey: ["files", api.getCurrentPath()],
     queryFn: () => api.listFiles(),
     enabled: isConnected,
   });
 
-  const filteredFiles = files.filter((file) =>
+  const filteredFiles = fileData.files.filter((file) =>
     file.key.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const filteredFolders = fileData.folders.filter((folder) =>
+    folder.prefix.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const disconnectMutation = useMutation({
@@ -49,8 +55,8 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FolderOpen className="w-6 h-6 text-gray-700" />
@@ -88,14 +94,29 @@ function App() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full p-6">
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
+          <Breadcrumbs onNavigate={(path) => {
+            api.setCurrentPath(path);
+            queryClient.invalidateQueries({ queryKey: ["files"] });
+          }} />
+          
           <UploadZone onUpload={() => queryClient.invalidateQueries({ queryKey: ["files"] })}>
-            <FileList
-              files={filteredFiles}
-              isLoading={isLoading}
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["files"] })}
-            />
+            <div>
+              <FolderList
+                folders={filteredFolders}
+                onNavigate={(path) => {
+                  api.setCurrentPath(path);
+                  queryClient.invalidateQueries({ queryKey: ["files"] });
+                }}
+              />
+              
+              <FileList
+                files={filteredFiles}
+                isLoading={isLoading}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ["files"] })}
+              />
+            </div>
           </UploadZone>
         </div>
       </div>

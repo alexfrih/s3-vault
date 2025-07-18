@@ -1,21 +1,24 @@
 {
-  "name": "tauri-app",
+  "name": "s3-vault",
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron-build": "npm run build && electron-builder",
+    "dist": "electron-builder"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.734.0",
+    "@aws-sdk/s3-request-presigner": "^3.734.0",
     "@tanstack/react-query": "^5.83.0",
-    "@tauri-apps/api": "^2.6.0",
-    "@tauri-apps/plugin-dialog": "^2.3.0",
-    "@tauri-apps/plugin-fs": "^2.4.0",
-    "@tauri-apps/plugin-opener": "^2",
     "clsx": "^2.1.1",
+    "electron-store": "^8.1.0",
     "lucide-react": "^0.525.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -24,14 +27,41 @@
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.11",
-    "@tauri-apps/cli": "^2",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "electron-reload": "^2.0.0-alpha.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.example.s3vault",
+    "productName": "S3 Vault",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "!node_modules/@aws-sdk/**/dist-es/**",
+      "!node_modules/@aws-sdk/**/dist-types/**"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "src-tauri/icons/icon.icns"
+    },
+    "win": {
+      "icon": "src-tauri/icons/icon.ico"
+    },
+    "linux": {
+      "icon": "src-tauri/icons/icon.png"
+    }
   }
 }

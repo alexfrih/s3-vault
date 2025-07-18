@@ -3,8 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Download, Trash2, FileIcon, RefreshCw, Loader2 } from "lucide-react";
 import { api, S3File } from "../lib/api";
 import { formatBytes, formatDate, cn } from "../lib/utils";
-import { save } from "@tauri-apps/plugin-dialog";
-import { writeFile } from "@tauri-apps/plugin-fs";
+import { useToast } from "../contexts/ToastContext";
 
 interface FileListProps {
   files: S3File[];
@@ -14,26 +13,24 @@ interface FileListProps {
 
 export function FileList({ files, isLoading, onRefresh }: FileListProps) {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const { showToast } = useToast();
 
   const downloadMutation = useMutation({
     mutationFn: async (key: string) => {
-      const data = await api.downloadFile(key);
-      const filename = key.split("/").pop() || key;
-      
-      const path = await save({
-        defaultPath: filename,
-        filters: [{ name: "All Files", extensions: ["*"] }],
-      });
-      
-      if (path) {
-        await writeFile(path, data);
-      }
+      // In Electron, downloads are handled by opening the URL
+      await api.downloadFile(key);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteFile,
-    onSuccess: onRefresh,
+    onSuccess: () => {
+      onRefresh();
+      showToast("File deleted successfully", "success");
+    },
+    onError: () => {
+      showToast("Failed to delete file", "error");
+    },
   });
 
   const toggleSelect = (key: string) => {
@@ -71,7 +68,10 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
           {files.length} {files.length === 1 ? "file" : "files"}
         </h2>
         <button
-          onClick={onRefresh}
+          onClick={() => {
+            onRefresh();
+            showToast("Files refreshed", "success");
+          }}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           title="Refresh"
         >
@@ -99,7 +99,7 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
             
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {file.key}
+                {file.key.split('/').pop() || file.key}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {formatBytes(file.size)} • {formatDate(file.last_modified)}
