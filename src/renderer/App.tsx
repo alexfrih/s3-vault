@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Search, FolderOpen, LogOut } from "lucide-react";
+import { Settings, Search, LogOut } from "lucide-react";
 import { api } from "./lib/api";
 import { ConnectForm } from "./components/ConnectForm";
 import { FileList } from "./components/FileList";
@@ -60,8 +60,8 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+    <div className="flex flex-col min-h-screen bg-zinc-50">
+      <header className="bg-white border-b border-zinc-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <img src="/picto.svg" alt="v0lt" className="w-8 h-8" />
@@ -69,30 +69,30 @@ function App() {
           
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input
                 type="text"
                 placeholder="Search files..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                className="pl-10 pr-4 py-2 w-64 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:border-transparent"
               />
             </div>
             
             <button
               onClick={() => setShowSettings(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
               title="Settings"
             >
-              <Settings className="w-5 h-5 text-gray-600" />
+              <Settings className="w-5 h-5 text-zinc-600" />
             </button>
             
             <button
               onClick={() => disconnectMutation.mutate()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
               title="Disconnect"
             >
-              <LogOut className="w-5 h-5 text-gray-600" />
+              <LogOut className="w-5 h-5 text-zinc-600" />
             </button>
           </div>
         </div>

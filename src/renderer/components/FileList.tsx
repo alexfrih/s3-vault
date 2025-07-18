@@ -63,25 +63,40 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
       </div>
     );
   }
 
   if (files.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-        <FileIcon className="w-12 h-12 mb-4 text-gray-300" />
-        <p className="text-lg font-medium">No files found</p>
-        <p className="text-sm mt-1">Upload files to get started</p>
+      <div className="bg-white rounded-lg border border-zinc-200">
+        <div className="p-4 border-b border-zinc-200 flex items-center justify-between">
+          <h2 className="font-semibold text-zinc-900">Files</h2>
+          <button
+            onClick={() => {
+              onRefresh();
+              showToast("Files refreshed", "success");
+            }}
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4 text-zinc-600" />
+          </button>
+        </div>
+        <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
+          <FileIcon className="w-12 h-12 mb-4 text-zinc-300" />
+          <p className="text-lg font-medium">No files found</p>
+          <p className="text-sm mt-1">Upload files to get started</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">
+    <div className="bg-white rounded-lg border border-zinc-200">
+      <div className="p-4 border-b border-zinc-200 flex items-center justify-between">
+        <h2 className="font-semibold text-zinc-900">
           {files.length} {files.length === 1 ? "file" : "files"}
         </h2>
         <button
@@ -89,10 +104,10 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
             onRefresh();
             showToast("Files refreshed", "success");
           }}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
           title="Refresh"
         >
-          <RefreshCw className="w-4 h-4 text-gray-600" />
+          <RefreshCw className="w-4 h-4 text-zinc-600" />
         </button>
       </div>
 
@@ -101,39 +116,42 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
           <div
             key={file.key}
             className={cn(
-              "flex items-center p-4 hover:bg-gray-50 transition-colors",
-              selectedFiles.has(file.key) && "bg-gray-50"
+              "flex items-center p-4 hover:bg-zinc-50 transition-colors",
+              selectedFiles.has(file.key) && "bg-zinc-50"
             )}
           >
             <input
               type="checkbox"
               checked={selectedFiles.has(file.key)}
               onChange={() => toggleSelect(file.key)}
-              className="mr-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+              className="mr-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
             />
             
             <FileIcon className="w-5 h-5 text-zinc-500 mr-3 flex-shrink-0" />
             
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-zinc-900 truncate">
                 {file.key.split('/').pop() || file.key}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-zinc-500 mt-1">
                 {formatBytes(file.size)} • {formatDate(file.last_modified)}
               </p>
             </div>
 
             <div className="flex items-center space-x-2 ml-4">
               <button
-                onClick={() => downloadMutation.mutate(file.key)}
+                onClick={() => {
+                  downloadMutation.mutate(file.key);
+                  showToast(`Downloading ${file.key.split('/').pop() || file.key}`, "info");
+                }}
                 disabled={downloadMutation.isPending}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
                 title="Download"
               >
                 {downloadMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-zinc-600 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 text-gray-600" />
+                  <Download className="w-4 h-4 text-zinc-600" />
                 )}
               </button>
               
@@ -142,10 +160,10 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
                   setFileToRename(file);
                   setRenameModalOpen(true);
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                 title="Rename"
               >
-                <Edit2 className="w-4 h-4 text-gray-600" />
+                <Edit2 className="w-4 h-4 text-zinc-600" />
               </button>
               
               <button
@@ -155,13 +173,13 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
                   }
                 }}
                 disabled={deleteMutation.isPending}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
                 title="Delete"
               >
                 {deleteMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-zinc-600 animate-spin" />
                 ) : (
-                  <Trash2 className="w-4 h-4 text-gray-600" />
+                  <Trash2 className="w-4 h-4 text-zinc-600" />
                 )}
               </button>
             </div>

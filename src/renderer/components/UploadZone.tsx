@@ -86,20 +86,20 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
     <div
       className={cn(
         "rounded-lg border-2 border-dashed transition-colors",
-        isDragging ? "border-gray-400 bg-gray-50" : "border-gray-200"
+        isDragging ? "border-zinc-400 bg-zinc-50" : "border-zinc-200"
       )}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
       <div className="flex flex-col">
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-zinc-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Files</h2>
+            <h2 className="text-lg font-semibold text-zinc-900">Files</h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowCreateFolder(true)}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg hover:bg-zinc-50 transition-colors"
               >
                 <FolderPlus className="w-4 h-4" />
                 <span>New Folder</span>
@@ -107,7 +107,7 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
               <button
                 onClick={handleSelectFiles}
                 disabled={uploadMutation.isPending}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="flex items-center space-x-2 px-4 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 {uploadMutation.isPending ? (
                   <>
@@ -130,10 +130,10 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
         </div>
 
         {isDragging && (
-          <div className="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-zinc-900 bg-opacity-50 flex items-center justify-center pointer-events-none">
             <div className="bg-white p-6 rounded-lg shadow-lg">
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-lg font-medium text-gray-900">Drop files to upload</p>
+              <Upload className="w-12 h-12 text-zinc-400 mx-auto mb-3" />
+              <p className="text-lg font-medium text-zinc-900">Drop files to upload</p>
             </div>
           </div>
         )}

@@ -82,20 +82,20 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
 
   return (
     <div className="mb-4">
-      <div className="divide-y divide-gray-200 border border-gray-200 rounded-lg bg-white">
+      <div className="divide-y divide-zinc-200 border border-zinc-200 rounded-lg bg-white">
         {folders.map((folder) => (
           <div
             key={folder.prefix}
             className={cn(
-              "flex items-center p-4 hover:bg-gray-50 transition-colors",
-              selectedFolders.has(folder.prefix) && "bg-gray-50"
+              "flex items-center p-4 hover:bg-zinc-50 transition-colors",
+              selectedFolders.has(folder.prefix) && "bg-zinc-50"
             )}
           >
             <input
               type="checkbox"
               checked={selectedFolders.has(folder.prefix)}
               onChange={() => toggleSelect(folder.prefix)}
-              className="mr-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
+              className="mr-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
             />
             
             <Folder className="w-5 h-5 text-zinc-500 mr-3 flex-shrink-0" />
@@ -104,23 +104,23 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
               onClick={() => onNavigate(folder.prefix)}
               className="flex-1 min-w-0 flex items-center hover:text-zinc-700 transition-colors"
             >
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <p className="text-sm font-medium text-zinc-900 truncate">
                 {getFolderName(folder.prefix)}
               </p>
-              <ChevronRight className="w-4 h-4 ml-2 text-gray-400" />
+              <ChevronRight className="w-4 h-4 ml-2 text-zinc-400" />
             </button>
 
             <div className="flex items-center space-x-2 ml-4">
               <button
                 onClick={() => handleDownloadFolder(folder.prefix, getFolderName(folder.prefix))}
                 disabled={downloadingFolders.has(folder.prefix)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
                 title="Download folder as ZIP"
               >
                 {downloadingFolders.has(folder.prefix) ? (
-                  <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-zinc-600 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 text-gray-600" />
+                  <Download className="w-4 h-4 text-zinc-600" />
                 )}
               </button>
               <button
@@ -128,10 +128,10 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
                   setFolderToRename(folder);
                   setRenameModalOpen(true);
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
                 title="Rename folder"
               >
-                <Edit2 className="w-4 h-4 text-gray-600" />
+                <Edit2 className="w-4 h-4 text-zinc-600" />
               </button>
               <button
                 onClick={() => {
@@ -140,13 +140,13 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
                   }
                 }}
                 disabled={deleteMutation.isPending}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
                 title="Delete folder"
               >
                 {deleteMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-zinc-600 animate-spin" />
                 ) : (
-                  <Trash2 className="w-4 h-4 text-gray-600" />
+                  <Trash2 className="w-4 h-4 text-zinc-600" />
                 )}
               </button>
             </div>
