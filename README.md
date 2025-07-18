@@ -1,4 +1,4 @@
-# S3 Vault
+# picto.svg
 
 A modern, cross-platform desktop app for managing S3-compatible object storage.
 
@@ -46,7 +46,7 @@ npm run electron-build
 
 ## Usage
 
-1. Launch S3 Vault
+1. Launch picto.svg
 2. Enter your S3-compatible storage credentials:
    - **Endpoint URL**: Your S3 endpoint (e.g., `https://s3.amazonaws.com` or `https://us-east-1.linodeobjects.com`)
    - **Access Key ID**: Your access key

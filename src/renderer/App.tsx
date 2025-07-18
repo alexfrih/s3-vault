@@ -60,7 +60,7 @@ function App() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FolderOpen className="w-6 h-6 text-gray-700" />
-            <h1 className="text-xl font-semibold text-gray-900">S3 Vault</h1>
+            <h1 className="text-xl font-semibold text-gray-900">picto.svg</h1>
           </div>
           
           <div className="flex items-center space-x-4">

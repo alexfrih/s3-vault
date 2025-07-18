@@ -1,13 +1,13 @@
 # Auto-Update Setup Guide
 
-This guide explains how to set up auto-updates for S3 Vault.
+This guide explains how to set up auto-updates for picto.svg.
 
 ## Prerequisites
 
 1. **GitHub Personal Access Token**
    - Go to https://github.com/settings/tokens
    - Click "Generate new token (classic)"
-   - Give it a name like "S3 Vault Release"
+   - Give it a name like "picto.svg Release"
    - Select the `repo` scope
    - Generate and copy the token
 
@@ -66,7 +66,7 @@ This will:
 ## How Auto-Update Works
 
 1. **Check on Startup**: The app checks for updates when launched
-2. **Manual Check**: Users can check via menu: S3 Vault → Check for Updates
+2. **Manual Check**: Users can check via menu: picto.svg → Check for Updates
 3. **Download**: Users are prompted to download available updates
 4. **Install**: Updates install automatically on app restart
 

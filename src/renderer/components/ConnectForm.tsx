@@ -50,7 +50,7 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
       <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200 w-full max-w-md">
         <div className="text-center mb-8">
           <Archive className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900">S3 Vault</h1>
+          <h1 className="text-2xl font-bold text-gray-900">picto.svg</h1>
           <p className="text-gray-600 mt-2">
             {onCancel ? "Update your connection settings" : "Connect to your S3-compatible storage"}
           </p>
