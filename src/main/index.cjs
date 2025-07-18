@@ -147,19 +147,6 @@ function createMenu() {
       label: 'v0lt',
       submenu: [
         {
-          label: 'About v0lt',
-          click: () => {
-            dialog.showMessageBox(mainWindow, {
-              type: 'info',
-              title: 'About v0lt',
-              message: 'v0lt',
-              detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nNode: ${process.versions.node}`,
-              buttons: ['OK']
-            });
-          }
-        },
-        { type: 'separator' },
-        {
           label: 'Check for Updates...',
           click: () => {
             dialog.showMessageBox(mainWindow, {
@@ -182,7 +169,9 @@ function createMenu() {
   ];
 
   if (process.platform === 'darwin') {
-    template[0].submenu.unshift({ role: 'about' });
+    // Find and replace the label with just "About"
+    const aboutItem = { role: 'about', label: 'About' };
+    template[0].submenu.unshift(aboutItem);
   }
 
   const menu = Menu.buildFromTemplate(template);

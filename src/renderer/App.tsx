@@ -7,9 +7,10 @@ import { FileList } from "./components/FileList";
 import { FolderList } from "./components/FolderList";
 import { UploadZone } from "./components/UploadZone";
 import { Breadcrumbs } from "./components/Breadcrumbs";
+import { LoadingScreen } from "./components/LoadingScreen";
 
 function App() {
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ function App() {
   const { data: fileData = { files: [], folders: [] }, isLoading } = useQuery({
     queryKey: ["files", api.getCurrentPath()],
     queryFn: () => api.listFiles(),
-    enabled: isConnected,
+    enabled: isConnected === true,
   });
 
   const filteredFiles = fileData.files.filter((file) =>
@@ -42,6 +43,10 @@ function App() {
     },
   });
 
+  if (isConnected === null) {
+    return <LoadingScreen />;
+  }
+
   if (!isConnected || showSettings) {
     return (
       <ConnectForm
@@ -58,9 +63,8 @@ function App() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FolderOpen className="w-6 h-6 text-gray-700" />
-            <h1 className="text-xl font-semibold text-gray-900">picto.svg</h1>
+          <div className="flex items-center">
+            <img src="/picto.svg" alt="v0lt" className="w-8 h-8" />
           </div>
           
           <div className="flex items-center space-x-4">

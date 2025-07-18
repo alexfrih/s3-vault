@@ -112,7 +112,7 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
               className="mr-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
             />
             
-            <FileIcon className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
+            <FileIcon className="w-5 h-5 text-zinc-500 mr-3 flex-shrink-0" />
             
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">

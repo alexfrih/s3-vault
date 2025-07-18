@@ -98,11 +98,11 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
               className="mr-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500"
             />
             
-            <Folder className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
+            <Folder className="w-5 h-5 text-zinc-500 mr-3 flex-shrink-0" />
             
             <button
               onClick={() => onNavigate(folder.prefix)}
-              className="flex-1 min-w-0 flex items-center hover:text-blue-600 transition-colors"
+              className="flex-1 min-w-0 flex items-center hover:text-zinc-700 transition-colors"
             >
               <p className="text-sm font-medium text-gray-900 truncate">
                 {getFolderName(folder.prefix)}

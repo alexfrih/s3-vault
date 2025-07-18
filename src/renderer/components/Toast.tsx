@@ -20,13 +20,13 @@ export function Toast({ message, type, onClose, duration = 3000 }: ToastProps) {
   const icons = {
     success: <CheckCircle className="w-5 h-5 text-green-500" />,
     error: <XCircle className="w-5 h-5 text-red-500" />,
-    info: <Info className="w-5 h-5 text-blue-500" />,
+    info: <Info className="w-5 h-5 text-zinc-500" />,
   };
 
   const bgColors = {
     success: "bg-green-50 border-green-200",
     error: "bg-red-50 border-red-200",
-    info: "bg-blue-50 border-blue-200",
+    info: "bg-zinc-50 border-zinc-200",
   };
 
   return (
@@ -37,12 +37,12 @@ export function Toast({ message, type, onClose, duration = 3000 }: ToastProps) {
       )}
     >
       {icons[type]}
-      <p className="text-sm font-medium text-gray-900">{message}</p>
+      <p className="text-sm font-medium text-zinc-900">{message}</p>
       <button
         onClick={onClose}
-        className="ml-4 p-1 hover:bg-gray-100 rounded transition-colors"
+        className="ml-4 p-1 hover:bg-zinc-100 rounded transition-colors"
       >
-        <X className="w-4 h-4 text-gray-500" />
+        <X className="w-4 h-4 text-zinc-500" />
       </button>
     </div>
   );

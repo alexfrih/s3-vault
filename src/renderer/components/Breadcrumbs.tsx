@@ -13,7 +13,7 @@ export function Breadcrumbs({ onNavigate }: BreadcrumbsProps) {
     <div className="flex items-center space-x-1 text-sm mb-4">
       <button
         onClick={() => onNavigate('')}
-        className="flex items-center hover:text-blue-600 transition-colors"
+        className="flex items-center hover:text-zinc-700 transition-colors"
       >
         <Home className="w-4 h-4 mr-1" />
         <span>Root</span>
@@ -23,10 +23,10 @@ export function Breadcrumbs({ onNavigate }: BreadcrumbsProps) {
         const path = parts.slice(0, index + 1).join('/') + '/';
         return (
           <div key={path} className="flex items-center">
-            <ChevronRight className="w-4 h-4 text-gray-400 mx-1" />
+            <ChevronRight className="w-4 h-4 text-zinc-400 mx-1" />
             <button
               onClick={() => onNavigate(path)}
-              className="hover:text-blue-600 transition-colors"
+              className="hover:text-zinc-700 transition-colors"
             >
               {part}
             </button>
