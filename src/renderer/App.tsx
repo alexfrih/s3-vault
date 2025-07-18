@@ -64,7 +64,7 @@ function App() {
       <header className="bg-white border-b border-zinc-200 px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <img src="/picto.svg" alt="v0lt" className="w-8 h-8" />
+            <img src="./picto.svg" alt="v0lt" className="w-8 h-8" />
           </div>
           
           <div className="flex items-center space-x-4">

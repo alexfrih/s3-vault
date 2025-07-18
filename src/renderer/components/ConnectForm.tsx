@@ -49,7 +49,7 @@ export function ConnectForm({ onConnect, onCancel }: ConnectFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-zinc-50">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-zinc-200 w-full max-w-md">
         <div className="text-center mb-8">
-          <img src="/picto.svg" alt="v0lt" className="w-12 h-12 mx-auto mb-4" />
+          <img src="./picto.svg" alt="v0lt" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-zinc-900">v0lt</h1>
           <p className="text-zinc-600 mt-2">
             {onCancel ? "Update your connection settings" : "Connect to your S3-compatible storage"}
