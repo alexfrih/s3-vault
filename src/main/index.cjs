@@ -17,8 +17,8 @@ const isDev = !app.isPackaged;
 
 // Enable live reload for Electron in development
 if (isDev) {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron'),
+  require('electron-reload')(path.join(__dirname, '..', '..'), {
+    electron: path.join(__dirname, '..', '..', 'node_modules', '.bin', 'electron'),
     hardResetMethod: 'exit'
   });
 }
@@ -28,19 +28,21 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: path.join(__dirname, '..', 'preload', 'index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: !isDev
     },
-    icon: path.join(__dirname, '../src-tauri/icons/icon.png')
+    icon: path.join(__dirname, '../public/icons/icon.png')
   });
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // In production, load from the app's resources
+    const indexPath = path.join(__dirname, '../../dist/index.html');
+    mainWindow.loadFile(indexPath);
   }
 
   // Disable security warnings in development
@@ -119,15 +121,15 @@ autoUpdater.on('update-downloaded', () => {
 function createMenu() {
   const template = [
     {
-      label: 'S3 Vault',
+      label: 'v0lt',
       submenu: [
         {
-          label: 'About S3 Vault',
+          label: 'About v0lt',
           click: () => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
-              title: 'About S3 Vault',
-              message: 'S3 Vault',
+              title: 'About v0lt',
+              message: 'v0lt',
               detail: `Version: ${app.getVersion()}\nElectron: ${process.versions.electron}\nNode: ${process.versions.node}`,
               buttons: ['OK']
             });

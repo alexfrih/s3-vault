@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Key, Globe, Archive, Loader2, Link } from "lucide-react";
+import { Key, Archive, Loader2, Link } from "lucide-react";
 import { api, S3Config } from "../lib/api";
 import { cn } from "../lib/utils";
 

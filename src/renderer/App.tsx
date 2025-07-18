@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Search, FolderOpen, LogOut, FolderPlus } from "lucide-react";
+import { Settings, Search, FolderOpen, LogOut } from "lucide-react";
 import { api } from "./lib/api";
 import { ConnectForm } from "./components/ConnectForm";
 import { FileList } from "./components/FileList";

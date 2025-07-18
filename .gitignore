@@ -76,3 +76,5 @@ Cargo.lock
 *.pem
 *.crt
 *.key
+v0lt_certificate.p12
+developerID_application.cer

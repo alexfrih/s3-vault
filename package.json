@@ -1,9 +1,9 @@
 {
-  "name": "s3-vault",
+  "name": "v0lt",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.5",
   "type": "module",
-  "main": "electron/main.cjs",
+  "main": "src/main/index.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -12,7 +12,7 @@
     "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron-build": "npm run build && electron-builder",
     "dist": "electron-builder",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.734.0",
@@ -47,26 +47,31 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.example.s3vault",
-    "productName": "S3 Vault",
+    "appId": "com.solarbeam.v0lt",
+    "productName": "v0lt",
     "directories": {
       "output": "dist-electron"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
+      "src/main/**/*",
+      "src/preload/**/*",
+      "public/icons/**/*",
       "!node_modules/@aws-sdk/**/dist-es/**",
       "!node_modules/@aws-sdk/**/dist-types/**"
     ],
     "mac": {
       "category": "public.app-category.utilities",
-      "icon": "src-tauri/icons/icon.icns"
+      "icon": "public/icons/icon.icns",
+      "notarize": {
+        "teamId": "VP9U3RSL2K"
+      }
     },
     "win": {
-      "icon": "src-tauri/icons/icon.ico"
+      "icon": "public/icons/icon.ico"
     },
     "linux": {
-      "icon": "src-tauri/icons/icon.png"
+      "icon": "public/icons/icon.png"
     },
     "publish": {
       "provider": "github",

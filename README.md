@@ -24,12 +24,8 @@ Download the latest release for your platform from the [Releases](https://github
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/)
 - [Node.js](https://nodejs.org/) (v18 or later)
-- Platform-specific dependencies:
-  - **Linux**: `sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev`
-  - **Windows**: [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) (usually pre-installed)
-  - **macOS**: Xcode Command Line Tools
+- npm or yarn package manager
 
 ### Build
 
@@ -42,10 +38,10 @@ cd v0lt
 npm install
 
 # Run in development
-npm run tauri dev
+npm run electron-dev
 
 # Build for production
-npm run tauri build
+npm run electron-build
 ```
 
 ## Usage
@@ -64,10 +60,10 @@ Your credentials are stored securely in your system's keychain/credential manage
 ## Development
 
 The app uses:
-- [Tauri](https://tauri.app/) - Rust-based app framework
+- [Electron](https://www.electronjs.org/) - Cross-platform desktop app framework
 - [React](https://react.dev/) - UI framework
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [AWS SDK for Rust](https://aws.amazon.com/sdk-for-rust/) - S3 operations
+- [AWS SDK for JavaScript](https://aws.amazon.com/sdk-for-javascript/) - S3 operations
 
 ## License
 
