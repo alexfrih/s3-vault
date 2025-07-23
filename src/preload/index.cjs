@@ -7,7 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clearCredentials: () => ipcRenderer.invoke('clear-credentials'),
   listObjects: (params) => ipcRenderer.invoke('list-objects', params),
   uploadFile: (params) => ipcRenderer.invoke('upload-file', params),
+  uploadFileWithProgress: (params) => ipcRenderer.invoke('upload-file-with-progress', params),
   downloadFile: (params) => ipcRenderer.invoke('download-file', params),
+  downloadFileWithProgress: (params) => ipcRenderer.invoke('download-file-with-progress', params),
+  downloadFiles: (params) => ipcRenderer.invoke('download-files', params),
   deleteFile: (params) => ipcRenderer.invoke('delete-file', params),
   createFolder: (params) => ipcRenderer.invoke('create-folder', params),
   deleteFolder: (params) => ipcRenderer.invoke('delete-folder', params),
@@ -27,5 +30,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onUpdateDownloaded: (callback) => {
     ipcRenderer.on('update-downloaded', callback);
+  },
+  
+  // Transfer progress
+  onTransferProgress: (callback) => {
+    ipcRenderer.on('transfer-progress', callback);
   }
 });

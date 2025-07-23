@@ -8,8 +8,11 @@ import { FolderList } from "./components/FolderList";
 import { UploadZone } from "./components/UploadZone";
 import { Breadcrumbs } from "./components/Breadcrumbs";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { TransferProgress } from "./components/TransferProgress";
+import { useTransferProgress } from "./hooks/useTransferProgress";
 
 function App() {
+  useTransferProgress();
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,6 +127,8 @@ function App() {
           </UploadZone>
         </div>
       </div>
+      
+      <TransferProgress />
     </div>
   );
 }

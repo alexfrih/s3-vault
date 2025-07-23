@@ -33,8 +33,12 @@ export function FolderList({ folders, onNavigate }: FolderListProps) {
   const handleDownloadFolder = async (prefix: string, folderName: string) => {
     setDownloadingFolders(prev => new Set(prev).add(prefix));
     try {
-      await api.downloadFolder(prefix, folderName);
-      showToast(`Downloaded ${folderName}.zip`, "success");
+      const completed = await api.downloadFolder(prefix, folderName);
+      if (completed) {
+        showToast(`Downloaded ${folderName}.zip`, "success");
+      } else {
+        showToast("Download canceled", "info");
+      }
     } catch (error) {
       showToast("Failed to download folder", "error");
     } finally {

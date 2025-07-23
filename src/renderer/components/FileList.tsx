@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Download, Trash2, FileIcon, RefreshCw, Loader2, Edit2 } from "lucide-react";
+import { Download, Trash2, FileIcon, RefreshCw, Loader2, Edit2, DownloadCloud } from "lucide-react";
 import { api, S3File } from "../lib/api";
 import { formatBytes, formatDate, cn } from "../lib/utils";
 import { useToast } from "../contexts/ToastContext";
+import { useTransfers } from "../contexts/TransferContext";
 import { RenameModal } from "./RenameModal";
 
 interface FileListProps {
@@ -17,11 +18,60 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [fileToRename, setFileToRename] = useState<S3File | null>(null);
   const { showToast } = useToast();
+  const { addTransfer } = useTransfers();
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const downloadMutation = useMutation({
-    mutationFn: async (key: string) => {
-      // In Electron, downloads are handled by opening the URL
-      await api.downloadFile(key);
+    mutationFn: async ({ file }: { file: S3File }) => {
+      const transferId = addTransfer({
+        type: 'download',
+        fileName: file.key.split('/').pop() || file.key,
+        fileSize: file.size,
+        progress: 0,
+        status: 'pending'
+      });
+      
+      try {
+        const completed = await api.downloadFileWithProgress(file.key, transferId);
+        if (!completed) {
+          // User canceled
+          showToast("Download canceled", "info");
+        }
+      } catch (error) {
+        showToast("Download failed", "error");
+        throw error;
+      }
+    },
+  });
+  
+  const downloadMultipleMutation = useMutation({
+    mutationFn: async (selectedFiles: S3File[]) => {
+      // Create transfer entries for each file
+      const transferIds = selectedFiles.map(file => 
+        addTransfer({
+          type: 'download',
+          fileName: file.key.split('/').pop() || file.key,
+          fileSize: file.size,
+          progress: 0,
+          status: 'pending'
+        })
+      );
+      
+      try {
+        const completed = await api.downloadFiles(
+          selectedFiles.map(f => f.key),
+          transferIds
+        );
+        
+        if (!completed) {
+          showToast("Download canceled", "info");
+        } else {
+          showToast(`Downloaded ${selectedFiles.length} files`, "success");
+        }
+      } catch (error) {
+        showToast("Download failed", "error");
+        throw error;
+      }
     },
   });
 
@@ -60,6 +110,14 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
     setSelectedFiles(newSelected);
   };
 
+  // Handle indeterminate state for select all checkbox
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = 
+        selectedFiles.size > 0 && selectedFiles.size < files.length;
+    }
+  }, [selectedFiles.size, files.length]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -96,19 +154,61 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
   return (
     <div className="bg-white rounded-lg border border-zinc-200">
       <div className="p-4 border-b border-zinc-200 flex items-center justify-between">
-        <h2 className="font-semibold text-zinc-900">
-          {files.length} {files.length === 1 ? "file" : "files"}
-        </h2>
-        <button
-          onClick={() => {
-            onRefresh();
-            showToast("Files refreshed", "success");
-          }}
-          className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4 text-zinc-600" />
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            checked={files.length > 0 && selectedFiles.size === files.length}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedFiles(new Set(files.map(f => f.key)));
+              } else {
+                setSelectedFiles(new Set());
+              }
+            }}
+            className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+            title="Select all files"
+          />
+          <h2 className="font-semibold text-zinc-900">
+            {files.length} {files.length === 1 ? "file" : "files"}
+            {selectedFiles.size > 0 && (
+              <span className="ml-2 text-sm text-zinc-500">
+                ({selectedFiles.size} selected)
+              </span>
+            )}
+          </h2>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedFiles.size > 0 && (
+            <button
+              onClick={() => {
+                const selectedFileObjects = files.filter(f => selectedFiles.has(f.key));
+                downloadMultipleMutation.mutate(selectedFileObjects);
+                setSelectedFiles(new Set());
+              }}
+              disabled={downloadMultipleMutation.isPending}
+              className="flex items-center gap-2 px-3 py-2 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              title="Download selected files"
+            >
+              {downloadMultipleMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <DownloadCloud className="w-4 h-4" />
+              )}
+              <span className="text-sm">Download Selected</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              onRefresh();
+              showToast("Files refreshed", "success");
+            }}
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4 text-zinc-600" />
+          </button>
+        </div>
       </div>
 
       <div className="divide-y divide-gray-200">
@@ -141,8 +241,7 @@ export function FileList({ files, isLoading, onRefresh }: FileListProps) {
             <div className="flex items-center space-x-2 ml-4">
               <button
                 onClick={() => {
-                  downloadMutation.mutate(file.key);
-                  showToast(`Downloading ${file.key.split('/').pop() || file.key}`, "info");
+                  downloadMutation.mutate({ file });
                 }}
                 disabled={downloadMutation.isPending}
                 className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"

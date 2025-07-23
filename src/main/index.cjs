@@ -70,6 +70,9 @@ autoUpdater.on('checking-for-update', () => {
 });
 
 autoUpdater.on('update-available', (info) => {
+  // Reset manual check flag
+  global.manualUpdateCheck = false;
+  
   // Send to renderer
   if (mainWindow) {
     mainWindow.webContents.send('update-available', info);
@@ -92,24 +95,33 @@ autoUpdater.on('update-available', (info) => {
 
 autoUpdater.on('update-not-available', () => {
   console.log('Update not available');
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'No Updates Available',
-    message: 'You have the latest version!',
-    detail: `You are running v0lt version ${app.getVersion()}, which is the latest version available.`,
-    buttons: ['OK']
-  });
+  // Only show dialog if user manually checked for updates
+  if (global.manualUpdateCheck) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'No Updates Available',
+      message: 'You have the latest version!',
+      detail: `You are running v0lt version ${app.getVersion()}, which is the latest version available.`,
+      buttons: ['OK']
+    });
+    global.manualUpdateCheck = false;
+  }
 });
 
 autoUpdater.on('error', (err) => {
   console.error('Error in auto-updater:', err);
-  dialog.showMessageBox(mainWindow, {
+  
+  // Reset manual check flag and show error only if manual check
+  if (global.manualUpdateCheck) {
+    dialog.showMessageBox(mainWindow, {
     type: 'error',
     title: 'Update Error',
     message: 'Error checking for updates',
     detail: err.message || 'An unknown error occurred while checking for updates.',
     buttons: ['OK']
-  });
+    });
+    global.manualUpdateCheck = false;
+  }
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
@@ -148,14 +160,24 @@ function createMenu() {
       submenu: [
         {
           label: 'Check for Updates...',
-          click: () => {
-            dialog.showMessageBox(mainWindow, {
+          click: async () => {
+            // Set a flag to show dialog if no updates
+            global.manualUpdateCheck = true;
+            
+            // Show checking dialog
+            const checkingDialog = dialog.showMessageBoxSync(mainWindow, {
               type: 'info',
               title: 'Checking for Updates',
               message: 'Checking for updates...',
               detail: 'Please wait while we check for new versions.',
-              buttons: []
+              buttons: ['Cancel']
             });
+            
+            if (checkingDialog === 0) {
+              global.manualUpdateCheck = false;
+              return;
+            }
+            
             autoUpdater.checkForUpdatesAndNotify();
           }
         },
@@ -341,6 +363,77 @@ ipcMain.handle('upload-file', async (event, { bucket, key, filePath, data }) => 
   }
 });
 
+// Upload file with progress
+ipcMain.handle('upload-file-with-progress', async (event, { bucket, key, filePath, data, transferId }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    let fileContent;
+    let fileSize;
+    
+    if (data) {
+      // Direct data upload (from drag & drop)
+      fileContent = Buffer.from(data);
+      fileSize = fileContent.length;
+    } else if (filePath) {
+      // File path upload (from file dialog)
+      const stats = await fs.stat(filePath);
+      fileSize = stats.size;
+      fileContent = await fs.readFile(filePath);
+    } else {
+      throw new Error('No file data or path provided');
+    }
+    
+    // Send initial progress
+    if (mainWindow) {
+      mainWindow.webContents.send('transfer-progress', {
+        id: transferId,
+        progress: 0,
+        fileSize
+      });
+    }
+    
+    // Upload with progress tracking
+    // Note: AWS SDK v3 doesn't have built-in upload progress for PutObject
+    // For large files, we should use multipart upload with progress
+    // For now, we'll simulate progress
+    const uploadPromise = s3Client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: fileContent
+    }));
+    
+    // Simulate progress (since S3 SDK doesn't provide real progress for single uploads)
+    const progressInterval = setInterval(() => {
+      if (mainWindow) {
+        mainWindow.webContents.send('transfer-progress', {
+          id: transferId,
+          progress: 50 // Show 50% while uploading
+        });
+      }
+    }, 500);
+    
+    await uploadPromise;
+    
+    clearInterval(progressInterval);
+    
+    // Send completion
+    if (mainWindow) {
+      mainWindow.webContents.send('transfer-progress', {
+        id: transferId,
+        progress: 100
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Upload error:', error);
+    throw error;
+  }
+});
+
 // Download file
 ipcMain.handle('download-file', async (event, { bucket, key }) => {
   if (!s3Client) {
@@ -357,6 +450,191 @@ ipcMain.handle('download-file', async (event, { bucket, key }) => {
     return { url: signedUrl };
   } catch (error) {
     console.error('Download error:', error);
+    throw error;
+  }
+});
+
+// Download file with progress
+ipcMain.handle('download-file-with-progress', async (event, { bucket, key, transferId, savePath }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    let filePath = savePath;
+    
+    // If no save path provided, ask user
+    if (!filePath) {
+      const fileName = path.basename(key);
+      const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: fileName,
+        filters: [
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+      
+      if (result.canceled) {
+        return { canceled: true };
+      }
+      
+      filePath = result.filePath;
+    }
+    
+    // Get object metadata first
+    const headCommand = new HeadObjectCommand({
+      Bucket: bucket,
+      Key: key
+    });
+    
+    const headResponse = await s3Client.send(headCommand);
+    const fileSize = headResponse.ContentLength;
+    
+    // Send initial progress
+    if (mainWindow) {
+      mainWindow.webContents.send('transfer-progress', {
+        id: transferId,
+        progress: 0,
+        fileSize
+      });
+    }
+    
+    // Get the object
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key
+    });
+    
+    const response = await s3Client.send(command);
+    const stream = response.Body;
+    
+    const writeStream = require('fs').createWriteStream(filePath);
+    let downloadedBytes = 0;
+    
+    // Track progress
+    stream.on('data', (chunk) => {
+      downloadedBytes += chunk.length;
+      const progress = Math.round((downloadedBytes / fileSize) * 100);
+      
+      if (mainWindow) {
+        mainWindow.webContents.send('transfer-progress', {
+          id: transferId,
+          progress
+        });
+      }
+    });
+    
+    // Pipe the stream to file
+    await new Promise((resolve, reject) => {
+      stream.pipe(writeStream)
+        .on('finish', resolve)
+        .on('error', reject);
+    });
+    
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('Download error:', error);
+    throw error;
+  }
+});
+
+// Download multiple files
+ipcMain.handle('download-files', async (event, { bucket, keys, transferIds }) => {
+  if (!s3Client) {
+    throw new Error('Not connected to S3');
+  }
+
+  try {
+    // Ask user to select download folder
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Download Folder'
+    });
+    
+    if (result.canceled) {
+      return { canceled: true };
+    }
+    
+    const downloadFolder = result.filePaths[0];
+    const results = [];
+    
+    // Download each file
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      const transferId = transferIds[i];
+      const fileName = path.basename(key);
+      const filePath = path.join(downloadFolder, fileName);
+      
+      try {
+        // Get object metadata
+        const headCommand = new HeadObjectCommand({
+          Bucket: bucket,
+          Key: key
+        });
+        
+        const headResponse = await s3Client.send(headCommand);
+        const fileSize = headResponse.ContentLength;
+        
+        // Send initial progress
+        if (mainWindow) {
+          mainWindow.webContents.send('transfer-progress', {
+            id: transferId,
+            progress: 0,
+            fileSize
+          });
+        }
+        
+        // Get the object
+        const command = new GetObjectCommand({
+          Bucket: bucket,
+          Key: key
+        });
+        
+        const response = await s3Client.send(command);
+        const stream = response.Body;
+        
+        const writeStream = require('fs').createWriteStream(filePath);
+        let downloadedBytes = 0;
+        
+        // Track progress
+        stream.on('data', (chunk) => {
+          downloadedBytes += chunk.length;
+          const progress = Math.round((downloadedBytes / fileSize) * 100);
+          
+          if (mainWindow) {
+            mainWindow.webContents.send('transfer-progress', {
+              id: transferId,
+              progress
+            });
+          }
+        });
+        
+        // Pipe the stream to file
+        await new Promise((resolve, reject) => {
+          stream.pipe(writeStream)
+            .on('finish', resolve)
+            .on('error', reject);
+        });
+        
+        results.push({ key, success: true, filePath });
+      } catch (error) {
+        console.error(`Error downloading ${key}:`, error);
+        results.push({ key, success: false, error: error.message });
+        
+        // Send error status
+        if (mainWindow) {
+          mainWindow.webContents.send('transfer-progress', {
+            id: transferId,
+            progress: 0,
+            status: 'failed',
+            error: error.message
+          });
+        }
+      }
+    }
+    
+    return { results, downloadFolder };
+  } catch (error) {
+    console.error('Download multiple files error:', error);
     throw error;
   }
 });
@@ -546,9 +824,20 @@ ipcMain.handle('download-folder', async (event, { bucket, prefix, folderName }) 
   }
 
   try {
-    // Create temporary zip file
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'v0lt-'));
-    const zipPath = path.join(tempDir, `${folderName}.zip`);
+    // Ask user where to save the ZIP file
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: `${folderName}.zip`,
+      filters: [
+        { name: 'ZIP Files', extensions: ['zip'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+    
+    if (result.canceled) {
+      return { canceled: true };
+    }
+    
+    const zipPath = result.filePath;
     
     // Create zip archive
     const output = require('fs').createWriteStream(zipPath);
@@ -619,17 +908,9 @@ ipcMain.handle('download-folder', async (event, { bucket, prefix, folderName }) 
       output.on('error', reject);
     });
     
-    // Read the zip file
-    const zipBuffer = await fs.readFile(zipPath);
-    
-    // Clean up temp file
-    await fs.unlink(zipPath);
-    await fs.rmdir(tempDir);
-    
     return {
       success: true,
-      data: zipBuffer.toString('base64'),
-      fileName: `${folderName}.zip`,
+      filePath: zipPath,
       fileCount
     };
   } catch (error) {

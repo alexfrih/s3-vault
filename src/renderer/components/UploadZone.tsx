@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { cn } from "../lib/utils";
 import { CreateFolderModal } from "./CreateFolderModal";
 import { useToast } from "../contexts/ToastContext";
+import { useTransfers } from "../contexts/TransferContext";
 
 interface UploadZoneProps {
   children: React.ReactNode;
@@ -15,10 +16,31 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const { showToast } = useToast();
+  const { addTransfer } = useTransfers();
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ key, data }: { key: string; data: Uint8Array }) => {
-      await api.uploadFile(key, data);
+    mutationFn: async ({ key, data, file }: { key: string; data: Uint8Array; file?: File }) => {
+      // Use progress for files larger than 5MB
+      const useProgress = file && file.size > 5 * 1024 * 1024;
+      
+      if (useProgress) {
+        const transferId = addTransfer({
+          type: 'upload',
+          fileName: file.name,
+          fileSize: file.size,
+          progress: 0,
+          status: 'pending'
+        });
+        
+        try {
+          await api.uploadFileWithProgress(key, data, transferId);
+        } catch (error) {
+          showToast("Upload failed", "error");
+          throw error;
+        }
+      } else {
+        await api.uploadFile(key, data);
+      }
     },
     onSuccess: () => {
       onUpload();
@@ -34,11 +56,11 @@ export function UploadZone({ children, onUpload }: UploadZoneProps) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        uploadMutation.mutate({ key: file.name, data });
+        uploadMutation.mutate({ key: file.name, data, file });
       };
       reader.readAsArrayBuffer(file);
     }
-  }, [uploadMutation]);
+  }, [uploadMutation, addTransfer]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

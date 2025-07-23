@@ -6,7 +6,10 @@ declare global {
       clearCredentials: () => Promise<any>;
       listObjects: (params: any) => Promise<any>;
       uploadFile: (params: any) => Promise<any>;
+      uploadFileWithProgress: (params: any) => Promise<any>;
       downloadFile: (params: any) => Promise<any>;
+      downloadFileWithProgress: (params: any) => Promise<any>;
+      downloadFiles: (params: any) => Promise<any>;
       deleteFile: (params: any) => Promise<any>;
       createFolder: (params: any) => Promise<any>;
       deleteFolder: (params: any) => Promise<any>;
@@ -15,6 +18,7 @@ declare global {
       renameFolder: (params: any) => Promise<any>;
       openFileDialog: () => Promise<string[] | null>;
       openUrl: (url: string) => Promise<void>;
+      onTransferProgress: (callback: (event: any, data: any) => void) => void;
     }
   }
 }
@@ -116,6 +120,35 @@ export const api = {
     
     return new Uint8Array();
   },
+  
+  async downloadFileWithProgress(key: string, transferId: string, savePath?: string): Promise<boolean> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    const result = await window.electronAPI.downloadFileWithProgress({
+      bucket: currentBucket,
+      key,
+      transferId,
+      savePath
+    });
+    
+    return !result.canceled;
+  },
+  
+  async downloadFiles(keys: string[], transferIds: string[]): Promise<boolean> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    const result = await window.electronAPI.downloadFiles({
+      bucket: currentBucket,
+      keys,
+      transferIds
+    });
+    
+    return !result.canceled;
+  },
 
   async uploadFile(key: string, data: Uint8Array): Promise<void> {
     if (!currentBucket) {
@@ -148,6 +181,20 @@ export const api = {
         data: Array.from(data)
       });
     }
+  },
+  
+  async uploadFileWithProgress(key: string, data: Uint8Array, transferId: string): Promise<void> {
+    if (!currentBucket) {
+      throw new Error('Not connected to S3');
+    }
+    
+    const fullKey = currentPath + key;
+    await window.electronAPI.uploadFileWithProgress({
+      bucket: currentBucket,
+      key: fullKey,
+      data: Array.from(data),
+      transferId
+    });
   },
 
   async deleteFile(key: string): Promise<void> {
@@ -217,7 +264,7 @@ export const api = {
     }
   },
   
-  async downloadFolder(prefix: string, folderName: string): Promise<void> {
+  async downloadFolder(prefix: string, folderName: string): Promise<boolean> {
     if (!currentBucket) {
       throw new Error('Not connected to S3');
     }
@@ -228,28 +275,15 @@ export const api = {
       folderName
     });
     
+    if (result.canceled) {
+      return false;
+    }
+    
     if (!result.success) {
       throw new Error('Failed to download folder');
     }
     
-    // Create a blob from the base64 data
-    const byteCharacters = atob(result.data);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/zip' });
-    
-    // Create download link
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = result.fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    return true;
   },
   
   async renameFile(oldKey: string, newName: string): Promise<void> {
